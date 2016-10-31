@@ -203,18 +203,32 @@ shinyServer(function(input, output) {
   output$sal.plot.comp.one <- renderPlot({
     bars(1,salcomp,indata=data.comp.one)
   })
+  
+  makepct<-function(num){
+    if(num<1){
+      num <- round(num,2)*100
+    } else{
+      num <- round(num)
+    }
+    return(as.character(num))
+  }
 
   output$gen.text <- renderText({
-    paste0('Number/Percent female employees:', as.character(data()[input$company,input$gen.choices]))
+    fem <- data()[input$company,input$gen.choices]
+    paste0('Number/Percent female employees:', makepct(fem))
   })
+  
   output$part.text <- renderText({
-    paste0('Participation:', as.character(data()[input$company,input$part.choices]))
+    part = as.numeric(data()[input$company,input$part.choices])
+    paste0('Participation: ', makepct(part))
   })
   output$gen.text.comp.one <- renderText({
-    paste0('Number/Percent female employees:', as.character(data.comp.one[1,'Percent female']))
+    fem <- data.comp.one[1,'Percent female']
+    paste0('Female employees:', makepct(fem))
   })
   output$part.text.comp.one <- renderText({
-    paste0('Participation:', as.character(data.comp.one[1,'Participation']))
+    part = data.comp.one[1,'Participation']
+    paste0('Participation: ', makepct(part))
   })
   
   #Create similar, based on gender, if available
@@ -224,10 +238,12 @@ shinyServer(function(input, output) {
     higher[which.min(abs(higher[,'Percent female'] - data()[input$company,input$gen.choices])),]
     })
   output$gen.text.sim <- renderText({
-    paste0('Number/Percent female employees:', as.character(data.sim()[,'Percent female']))
+    fem <- data.sim()[,'Percent female']
+    paste0('Female employees:', makepct(fem))
   })
   output$part.text.sim <- renderText({
-    paste0('Participation:', as.character(data.sim()[,'Participation']))
+    part = data.sim()[,'Participation']
+    paste0('Participation: ', makepct(part))
   })
   output$age.plot.sim <- renderPlot({
     bars(1,agecomp,indata=data.sim())
