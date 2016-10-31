@@ -1,0 +1,197 @@
+#UI - things to add
+#- Sections for employee data
+# - Gender
+# - Participation rate
+#- Format so row 1 = employer,2 = employee
+#- Add static "comprehensive"
+#- Add "similar" (i.e. same/close number of each component) (v2.0)
+
+library(shiny)
+library(markdown)
+
+shinyUI(fluidPage(
+  
+  # Application title
+  titlePanel("Workplace Wellness Evaluation Tool"),
+  tabsetPanel(
+    tabPanel("Input",
+             sidebarLayout(
+               sidebarPanel(
+                 fileInput('file1', 'Choose file to upload',
+                           accept = c(
+                             'text/csv',
+                             'text/comma-separated-values',
+                             'text/tab-separated-values',
+                             'text/plain',
+                             '.csv',
+                             '.tsv')),
+                 checkboxInput('header', 'Header', TRUE),
+                 radioButtons('sep', 'Separator',
+                              c(Comma=',',
+                                Semicolon=';',
+                                Tab='\t'),
+                              ','),
+                 radioButtons('quote', 'Quote',
+                              c(None='',
+                                'Double Quote'='"',
+                                'Single Quote'="'"),
+                              '"')
+               ),
+               mainPanel(tabPanel('preview', tableOutput('contents')))
+               
+             )                                            
+    ),
+    tabPanel('lead',
+             fluidRow(
+               column(
+                 width=4,tableOutput('lead')
+                 ),
+               column(
+                 width=8,
+                 includeHTML("./leadership.md.html")
+               )
+             )
+             ),
+    tabPanel('promo',
+             fluidRow(
+               column(
+                 width=4,tableOutput('promo')
+               ),
+               column(
+                 width=8,
+                 includeHTML("./promo.md.html")
+               )
+             )
+    ),
+    tabPanel('incent',
+             fluidRow(
+               column(
+                 width=4,tableOutput('incent')
+               ),
+               column(
+                 width=8,
+                 includeHTML("./incent.md.html")
+               )
+             )
+    ),
+    tabPanel('serv',
+             fluidRow(
+               column(
+                 width=4,tableOutput('serv')
+               ),
+               column(
+                 width=8,
+                 includeHTML("./serv.md.html")
+               )
+             )
+    ),
+    tabPanel('employees',
+             flowLayout(
+               tableOutput('age'),
+               tableOutput('sal'),
+               tableOutput('gen'),
+               tableOutput('part')
+             )
+    ),
+    tabPanel('Dashboard',
+             fluidRow(
+               column(
+                 width=3,verbatimTextOutput('choices')
+                      ),
+               column(
+                 width=4,numericInput('company','Company # (for debug)',1)
+               )
+             ),
+             #Employer data
+             fluidRow(
+               column(
+                 width=12,flowLayout(
+                   plotOutput('lead.plot'),
+                   plotOutput('promo.plot'),
+                   plotOutput('incent.plot')  
+                  )
+                 )
+                ),
+             fluidRow(
+               column(
+                 width=12,offset=1,plotOutput('serv.plot')
+               )
+             ),
+             #Employee data
+             fluidRow(
+               column(
+                 width=4,plotOutput('age.plot')
+                 ),
+               column(
+                 width=4,plotOutput('sal.plot')
+                 ),
+               column(
+                 width=4,
+                 verticalLayout(
+                   h3(textOutput('gen.text')),
+                   h3(textOutput('part.text'))
+                   )
+                 )
+               )
+             ),
+    tabPanel('Comprehensive',
+             fluidRow(
+               column(
+                 width=6,flowLayout(
+                   plotOutput('lead.plot.comp.one'),
+                   plotOutput('promo.plot.comp.one'),
+                   plotOutput('incent.plot.comp.one')  
+                 )
+               ),
+               column(
+                 width=6,offset=1,plotOutput('serv.plot.comp.one')
+               )
+             ),
+             fluidRow(
+               column(
+                 width=4,plotOutput('age.plot.comp.one')
+               ),
+               column(
+                 width=4,plotOutput('sal.plot.comp.one')
+               ),
+               column(
+                 width=4,
+                 verticalLayout(
+                   h3(textOutput('gen.text.comp.one')),
+                   h3(textOutput('part.text.comp.one'))
+                 )
+               )
+             )
+    ),
+    tabPanel('Similar',
+             fluidRow(
+               column(
+                 width=6,flowLayout(
+                   plotOutput('lead.plot.sim'),
+                   plotOutput('promo.plot.sim'),
+                   plotOutput('incent.plot.sim')  
+                 )
+               ),
+               column(
+                 width=6,offset=1,plotOutput('serv.plot.sim')
+               )
+             ),
+             fluidRow(
+               column(
+                 width=4,plotOutput('age.plot.sim')
+               ),
+               column(
+                 width=4,plotOutput('sal.plot.sim')
+               ),
+               column(
+                 width=4,
+                 verticalLayout(
+                   h3(textOutput('gen.text.sim')),
+                   h3(textOutput('part.text.sim'))
+                 )
+               )
+             )
+    )
+    )
+  )
+)
