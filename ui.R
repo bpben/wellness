@@ -1,18 +1,12 @@
 #UI - things to add
-#- Sections for employee data
-# - Gender
-# - Participation rate
-#- Format so row 1 = employer,2 = employee
-#- Add static "comprehensive"
-#- Add "similar" (i.e. same/close number of each component) (v2.0)
+# - Reformat so rows, not columns
 
 library(shiny)
 library(markdown)
 
 shinyUI(fluidPage(
-  
   # Application title
-  titlePanel("Workplace Wellness Evaluation Tool"),
+  titlePanel("Wellness Program Evaluation Tool (WPET)"),
   tabsetPanel(
     tabPanel("Input",
              sidebarLayout(
@@ -25,21 +19,34 @@ shinyUI(fluidPage(
                              'text/plain',
                              '.csv',
                              '.tsv')),
-                 checkboxInput('header', 'Header', TRUE),
-                 radioButtons('sep', 'Separator',
-                              c(Comma=',',
-                                Semicolon=';',
-                                Tab='\t'),
-                              ','),
-                 radioButtons('quote', 'Quote',
-                              c(None='',
-                                'Double Quote'='"',
-                                'Single Quote'="'"),
-                              '"')
+                 checkboxInput('template', 'Using WPET template?'),
+                 conditionalPanel(
+                   condition = "input.template == true",
+                   'Click on "Dashboard" tab to see results'
+                 ),
+                 conditionalPanel(
+                   condition = "input.template == false",
+                   checkboxInput('header', 'Header', TRUE),
+                   radioButtons('sep', 'Separator',
+                                c(Comma=',',
+                                  Semicolon=';',
+                                  Tab='\t'),
+                                ','),
+                   radioButtons('quote', 'Quote',
+                                c(None='',
+                                  'Double Quote'='"',
+                                  'Single Quote'="'"),
+                                '"')
+                 )
                ),
-               mainPanel(tabPanel('preview', tableOutput('contents')))
-               
-             )                                            
+               mainPanel(
+                 h3('Preview of data'),
+                 tabPanel('preview', 
+                          tableOutput('preview')
+                          )
+                 )
+                
+             )  
     ),
     tabPanel('lead',
              fluidRow(
@@ -105,14 +112,14 @@ shinyUI(fluidPage(
              #Employer data
              fluidRow(
                column(
-                 width=12,flowLayout(
-                   plotOutput('lead.plot'),
-                   plotOutput('promo.plot'),
-                   plotOutput('incent.plot')  
-                  )
-                 )
-                ),
-             fluidRow(
+                 width=12,plotOutput('lead.plot')
+                 ),
+               column(
+                 width=12,plotOutput('promo.plot')
+               ),
+               column(
+                 width=12,plotOutput('incent.plot')
+               ),
                column(
                  width=12,offset=1,plotOutput('serv.plot')
                )

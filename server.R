@@ -1,10 +1,4 @@
 #Server - things to add
-#- Graphs of employee data
-  # - Gender - Issue here, what if it's % or #, can just show that information?
-  # - Participation rate - display
-#- Format so row 1 = employer,2 = employee
-#- Add static "comprehensive"
-#- Add "similar" (i.e. same/close number of each component) (v2.0)
 
 library(shiny)
 library(reshape2)
@@ -41,27 +35,53 @@ scomp<-c('Training','Screening','Disease.management',
 agecomp<-c('<25','25-35','35-45','45-55','55-65','65+')
 salcomp<-c('<20k','20-29k','30-39k','40-59k','60k+')
 
+#Change all NAs to zero
+read.csv.tozero<-function(file,input){
+  x <-read.csv(file, header = input$header,
+               sep = input$sep, quote = input$quote,
+               check.names=FALSE)
+  x[is.na(x)]<-0
+  return(x)
+}
+
+#Label wrapping for clean charts
+wrap.it <- function(x, len)
+{ 
+  sapply(x, function(y) paste(strwrap(y, len), 
+                              collapse = "\n"), 
+         USE.NAMES = FALSE)
+}
+wrap.labels <- function(x, len)
+{
+  if (is.list(x))
+  {
+    lapply(x, wrap.it, len)
+  } else {
+    wrap.it(x, len)
+  }
+}
 
 shinyServer(function(input, output) {
   if(debug==1){
-    #//pocono/Drops/B/Batorsky_Benjamin/Inbox/
-    data <- reactive(read.csv('./data/combined_fortool.csv', header = input$header,
-                              sep = input$sep, quote = input$quote))
+    data <- reactive(read.csv.tozero('./data/combined_fortool.csv',input))
   } else data <- reactive(read.csv(input$file1    , header = input$header,
-                                   sep = input$sep, quote = input$quote))
+                                   sep = input$sep, quote = input$quote,
+                                   check.names = FALSE))
   
   output$comp.raw <- renderTable({
     head(data.comp.one)
   })
   
-  output$contents <- renderTable({
-    head(data())
-  })
+  output$preview <- renderTable({
+    t(head(data()))
+  },include.rownames=TRUE,include.colnames=FALSE)
   
   output$lead <- renderUI({
     choices <-checkboxGroupInput('lead.choices','Which columns describe "leadership"?',names(data()),
                                  #Pre-selected
-                                 c('champions','board_level','part_worktime'))
+                                 c('Program champions',
+                                   'Board level health discussions',
+                                   'Worktime participation'))
     choices
   })
   output$promo <- renderUI({
@@ -110,35 +130,56 @@ shinyServer(function(input, output) {
     head(data()[,c(input$lead.choices,input$promo.choices,input$incent.choices,input$serv.choices)])
   })
   
-  #plotter<-function(company,indata){
+  #Store original plot params
+  op<-c(5, 4, 4, 2) + 0.1
   plotter<-function(company,choices,indata=data()){
-    #pltdata<-(data.matrix(data()[company,indata]))
-    pltdata<-(data.matrix(indata[company,choices]))
+    par(mar = (c(5, 4, 7, 2)))
+    pltdata<-t(data.matrix(indata[company,choices]))
     y<-1:ncol(pltdata)
     x<-1:nrow(pltdata)
+    #Gray for 0, green for 1
     collist <- c('gray','darkgreen')
     image(x,y,pltdata, col = collist, breaks=seq(-1,1),
           axes=F,xlab="",ylab="")
-    axis(2, at = y, labels=choices,tick=FALSE)
+    #Draw labels on axis
+    axis(3, at = x, labels=wrap.labels(choices,10),tick=FALSE)
+    par(op)
   }
   
   output$lead.plot <- renderPlot({
-    validate(
+    if(input$template){
+      choices <- lcomp
+    } else {
+      validate(
       need(input$lead.choices!='','Select leadership variables to display')
     )
-    plotter(input$company,input$lead.choices)
+      choices <- input$lead.choices
+    }
+    print(choices)
+    plotter(input$company,choices)
   })
+  
   output$promo.plot <- renderPlot({
-    validate(
-      need(input$promo.choices!='','Select promotion variables to display')
-    )
-    plotter(input$company,input$promo.choices)
+    if(input$template){
+      choices <- pcomp
+    } else {
+      validate(
+        need(input$promo.choices!='','Select promotion variables to display')
+      )
+      choices <- input$promo.choices
+    }
+    plotter(input$company,choices)
   })
   output$incent.plot <- renderPlot({
-    validate(
-      need(input$incent.choices!='','Select incentive variables to display')
-    )
-    plotter(input$company,input$incent.choices)
+    if(input$template){
+      choices <- icomp
+    } else {
+      validate(
+        need(input$incent.choices!='','Select incentive variables to display')
+      )
+      choices <- input$incent.choices
+    }
+    plotter(input$company,choices)
   })
   output$lead.plot.comp.one <- renderPlot({
     plotter(1,lcomp,indata=data.comp.one)
@@ -168,40 +209,56 @@ shinyServer(function(input, output) {
   }
   
   output$serv.plot <- renderPlot({
-    validate(
-      need(input$serv.choices!='','Select service variables to display')
-    )
-    stars(input$company,input$serv.choices)
+    if(input$template){
+      choices <- scomp
+    } else {
+      validate(
+        need(input$serv.choices!='','Select service variables to display')
+      )
+      choices <- input$serv.choices
+    }
+    stars(input$company,choices)
     })
+  
   output$serv.plot.comp.one <- renderPlot({
     stars(1,scomp,indata=data.comp.one)
   })
     
   
-  bars<-function(company,choices,indata=data()){
-    #melted <- melt(data()[company,indata])
+  bars<-function(company,choices,indata=data(),title){
     melted <- melt(indata[company,choices])
     d<-ggplot(melted,aes(x=sort(as.character(variable)),y=value))
-    d+geom_bar(stat='identity')+theme_classic()+coord_flip()
+    d+geom_bar(stat='identity')+theme_classic()+coord_flip()+
+      labs(y='',title=title)
   }
   
   output$age.plot <- renderPlot({
-    validate(
-      need(input$age.choices!='','Select employee age variables to display')
-    )
-    bars(input$company,input$age.choices)
+    if(input$template){
+      choices <- agecomp
+    } else {
+      validate(
+        need(input$age.choices!='','Select employee age variables to display')
+      )
+      choices <- input$age.choices
+    }
+    bars(input$company,choices,title='Employee Age')
   })
   output$sal.plot <- renderPlot({
-    validate(
-      need(input$sal.choices!='','Select employee salary variables to display')
-    )
-    bars(input$company,input$sal.choices)
+    if(input$template){
+      choices <- salcomp
+    } else {
+      validate(
+        need(input$sal.choices!='','Select employee salary variables to display')
+      )
+      choices <- input$sal.choices
+    }
+    bars(input$company,choices,title='Employee Salary')
   })
   output$age.plot.comp.one <- renderPlot({
-    bars(1,agecomp,indata=data.comp.one)
+    bars(1,agecomp,indata=data.comp.one,title='Employee Age')
   })
   output$sal.plot.comp.one <- renderPlot({
-    bars(1,salcomp,indata=data.comp.one)
+    bars(1,salcomp,indata=data.comp.one,title='Employee Salary')
   })
   
   makepct<-function(num){
@@ -214,12 +271,28 @@ shinyServer(function(input, output) {
   }
 
   output$gen.text <- renderText({
-    fem <- data()[input$company,input$gen.choices]
+    if(input$template){
+      choices <- 'Percent female'
+    } else {
+      validate(
+        need(input$gen.choices!='','Select employee gender info to display')
+      )
+      choices <- input$gen.choices
+    }
+    fem <- data()[input$company,choices]
     paste0('Number/Percent female employees:', makepct(fem))
   })
   
   output$part.text <- renderText({
-    part = as.numeric(data()[input$company,input$part.choices])
+    if(input$template){
+      choices <- 'Participation'
+    } else {
+      validate(
+        need(input$part.choices!='','Select employee participation info to display')
+      )
+      choices <- input$part.choices
+    }
+    part = as.numeric(data()[input$company,choices])
     paste0('Participation: ', makepct(part))
   })
   output$gen.text.comp.one <- renderText({
@@ -233,9 +306,18 @@ shinyServer(function(input, output) {
   
   #Create similar, based on gender, if available
   data.sim <- reactive({
-    part.num<-as.numeric(data()[input$company,input$part.choices])
+    if(input$template){
+      part.num<-as.numeric(data()[input$company,'Participation'])
+      gen.num<-as.numeric(data()[input$company,'Percent female'])
+    } else{
+      validate(
+        need(input$part.choices!='','Select employee variables to find similar company')
+      )
+      part.num<-as.numeric(data()[input$company,input$part.choices])
+      gen.num<-as.numeric(data()[input$company,input$gen.choices])
+    }
     higher<-data.comp[as.numeric(data.comp$Participation) > part.num,]
-    higher[which.min(abs(higher[,'Percent female'] - data()[input$company,input$gen.choices])),]
+    higher[which.min(abs(higher[,'Percent female'] - gen.num)),]
     })
   output$gen.text.sim <- renderText({
     fem <- data.sim()[,'Percent female']
@@ -246,10 +328,10 @@ shinyServer(function(input, output) {
     paste0('Participation: ', makepct(part))
   })
   output$age.plot.sim <- renderPlot({
-    bars(1,agecomp,indata=data.sim())
+    bars(1,agecomp,indata=data.sim(),title='Employee Age')
   })
   output$sal.plot.sim <- renderPlot({
-    bars(1,salcomp,indata=data.sim())
+    bars(1,salcomp,indata=data.sim(),title='Employee Salary')
   })
   output$serv.plot.sim <- renderPlot({
     stars(1,scomp,indata=data.sim())
