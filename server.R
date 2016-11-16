@@ -1,16 +1,13 @@
 #Server - things to add
 
 library(shiny)
+library(xlsx)
 library(reshape2)
 library(ggplot2)
 library(RColorBrewer)
 
-debug <- 1
+debug <- 0
 
-#Comprehensive program data for comparison
-data.comp <- read.csv('./data/comprehensive.csv',check.names = FALSE)
-#Just the static "overall comprehensive" data
-data.comp.one <- data.comp[data.comp$compex==1,]
 lcomp<-c('Board level health discussions',
          'Program champions',
          'Performance objectives linked to health',
@@ -36,10 +33,14 @@ agecomp<-c('<25','25-35','35-45','45-55','55-65','65+')
 salcomp<-c('<20k','20-29k','30-39k','40-59k','60k+')
 
 #Change all NAs to zero
-read.csv.tozero<-function(file,input){
-  x <-read.csv(file, header = input$header,
-               sep = input$sep, quote = input$quote,
-               check.names=FALSE)
+read.tozero<-function(file,type){
+  if(type=='xlsx'){
+    raw <-read.xlsx(file, sheetName='template',colIndex=c(3,4))
+    x <- data.frame(t(raw[,2]))
+    names(x) <- raw[,1]
+  } else{
+    x <- read.csv(file,check.names = FALSE)
+  }
   x[is.na(x)]<-0
   return(x)
 }
@@ -61,19 +62,29 @@ wrap.labels <- function(x, len)
   }
 }
 
+#Comprehensive program data for comparison
+data.comp <- read.tozero('./data/comprehensive.csv','')
+#Just the static "overall comprehensive" data
+data.comp.one <- data.comp[data.comp$compex==1,]
+
 shinyServer(function(input, output) {
   if(debug==1){
-    data <- reactive(read.csv.tozero('./data/combined_fortool.csv',input))
-  } else data <- reactive(read.csv(input$file1    , header = input$header,
-                                   sep = input$sep, quote = input$quote,
-                                   check.names = FALSE))
+    #data <- reactive(read.csv.tozero('./data/combined_fortool.csv',input))
+    data <- reactive(
+      read.tozero('./data/template.xlsx','xlsx')
+      )
+  } else data <- eventReactive(input$file1,{
+                  infile<-input$file1
+                  read.tozero(infile$datapath,'xlsx')
+                  })
   
   output$comp.raw <- renderTable({
-    head(data.comp.one)
+    print(data())
   })
   
   output$preview <- renderTable({
-    t(head(data()))
+    #t(head(data()))
+    data.frame(names(data()))
   },include.rownames=TRUE,include.colnames=FALSE)
   
   output$lead <- renderUI({
@@ -134,7 +145,9 @@ shinyServer(function(input, output) {
   op<-c(5, 4, 4, 2) + 0.1
   plotter<-function(company,choices,indata=data()){
     par(mar = (c(5, 4, 7, 2)))
-    pltdata<-t(data.matrix(indata[company,choices]))
+    x<-indata[company,choices]
+    x[x>1]<-1
+    pltdata<-t(data.matrix(x))
     y<-1:ncol(pltdata)
     x<-1:nrow(pltdata)
     #Gray for 0, green for 1
@@ -155,7 +168,6 @@ shinyServer(function(input, output) {
     )
       choices <- input$lead.choices
     }
-    print(choices)
     plotter(input$company,choices)
   })
   
@@ -229,7 +241,7 @@ shinyServer(function(input, output) {
     melted <- melt(indata[company,choices])
     d<-ggplot(melted,aes(x=sort(as.character(variable)),y=value))
     d+geom_bar(stat='identity')+theme_classic()+coord_flip()+
-      labs(y='',title=title)
+      labs(x='',y='')+ggtitle(title)
   }
   
   output$age.plot <- renderPlot({

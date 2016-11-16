@@ -3,6 +3,20 @@
 
 library(shiny)
 library(markdown)
+chooser<-function(table, html){
+  tabPanel(table,
+           fluidRow(
+             column(
+               width=4,tableOutput(table)
+             ),
+             column(
+               width=8,
+               includeHTML(html)
+             )
+           )
+  )
+}
+
 
 shinyUI(fluidPage(
   # Application title
@@ -12,13 +26,7 @@ shinyUI(fluidPage(
              sidebarLayout(
                sidebarPanel(
                  fileInput('file1', 'Choose file to upload',
-                           accept = c(
-                             'text/csv',
-                             'text/comma-separated-values',
-                             'text/tab-separated-values',
-                             'text/plain',
-                             '.csv',
-                             '.tsv')),
+                           accept = '.xlsx'),
                  checkboxInput('template', 'Using WPET template?'),
                  conditionalPanel(
                    condition = "input.template == true",
@@ -45,53 +53,12 @@ shinyUI(fluidPage(
                           tableOutput('preview')
                           )
                  )
-                
-             )  
-    ),
-    tabPanel('lead',
-             fluidRow(
-               column(
-                 width=4,tableOutput('lead')
-                 ),
-               column(
-                 width=8,
-                 includeHTML("./leadership.md.html")
-               )
-             )
-             ),
-    tabPanel('promo',
-             fluidRow(
-               column(
-                 width=4,tableOutput('promo')
-               ),
-               column(
-                 width=8,
-                 includeHTML("./promo.md.html")
-               )
              )
     ),
-    tabPanel('incent',
-             fluidRow(
-               column(
-                 width=4,tableOutput('incent')
-               ),
-               column(
-                 width=8,
-                 includeHTML("./incent.md.html")
-               )
-             )
-    ),
-    tabPanel('serv',
-             fluidRow(
-               column(
-                 width=4,tableOutput('serv')
-               ),
-               column(
-                 width=8,
-                 includeHTML("./serv.md.html")
-               )
-             )
-    ),
+    chooser('lead','./leadership.md.html'),
+    chooser('promo','./promo.md.html'),
+    chooser('incent','./incent.md.html'),
+    chooser('serv','./serv.md.html'),
     tabPanel('employees',
              flowLayout(
                tableOutput('age'),
@@ -144,14 +111,16 @@ shinyUI(fluidPage(
     tabPanel('Comprehensive',
              fluidRow(
                column(
-                 width=6,flowLayout(
-                   plotOutput('lead.plot.comp.one'),
-                   plotOutput('promo.plot.comp.one'),
-                   plotOutput('incent.plot.comp.one')  
-                 )
+                 width=12,plotOutput('lead.plot.comp.one')
                ),
                column(
-                 width=6,offset=1,plotOutput('serv.plot.comp.one')
+                 width=12,plotOutput('promo.plot.comp.one')
+               ),
+               column(
+                 width=12,plotOutput('incent.plot.comp.one')
+               ),
+               column(
+                 width=12,offset=1,plotOutput('serv.plot.comp.one')
                )
              ),
              fluidRow(
@@ -173,14 +142,16 @@ shinyUI(fluidPage(
     tabPanel('Similar',
              fluidRow(
                column(
-                 width=6,flowLayout(
-                   plotOutput('lead.plot.sim'),
-                   plotOutput('promo.plot.sim'),
-                   plotOutput('incent.plot.sim')  
-                 )
+                 width=12,plotOutput('lead.plot.sim')
                ),
                column(
-                 width=6,offset=1,plotOutput('serv.plot.sim')
+                 width=12,plotOutput('promo.plot.sim')
+               ),
+               column(
+                 width=12,plotOutput('incent.plot.sim')
+               ),
+               column(
+                 width=12,offset=1,plotOutput('serv.plot.sim')
                )
              ),
              fluidRow(
