@@ -62,8 +62,63 @@ wrap.labels <- function(x, len)
   }
 }
 
+#Store original plot params
+op<-c(5, 4, 4, 2) + 0.1
+#Indicator plots
+plotter<-function(company,choices,indata){
+  par(mar = (c(5, 4, 7, 2)))
+  x<-indata[company,choices]
+  x[x>1]<-1
+  pltdata<-t(data.matrix(x))
+  y<-1:ncol(pltdata)
+  x<-1:nrow(pltdata)
+  #Gray for 0, green for 1
+  collist <- c('gray','darkgreen')
+  image(x,y,pltdata, col = collist, breaks=seq(-1,1),
+        axes=F,xlab="",ylab="")
+  #Draw labels on axis
+  axis(3, at = x, labels=wrap.labels(choices,10),tick=FALSE)
+  par(op)
+}
+
+#Star charts for services
+stars2<-dget(paste0("./stars2.R"))
+stars<-function(company,choices,indata){
+  indata = indata[company,choices]
+  if(ncol(indata)<=8){
+    colvec <-brewer.pal(ncol(indata),'Accent')
+  } else{
+    cols <-brewer.pal(12,'Paired')
+    pal <-colorRampPalette(cols)
+    colvec<-pal(ncol(indata))
+  }
+  a<-stars2(indata,draw.segments=TRUE,labels=NA,flip.labels=F,
+            scale=F,lty=0,col.segments=colvec)
+  stars2(matrix(1,ncol(indata),nrow=1),key.loc=c(a$Var1,a$Var2),
+         xpd = TRUE,key.labels = names(indata),flip.labels=F,add=T,scale=F,lty=0,cex=1)
+}
+
+#Employee bar charts
+bars<-function(company,choices,indata,title){
+  melted <- melt(indata[company,choices])
+  d<-ggplot(melted,aes(x=sort(as.character(variable)),y=value))
+  d+geom_bar(stat='identity')+theme_classic()+coord_flip()+
+    labs(x='',y='')+ggtitle(title)
+}
+
+#Make number into whole-number percent, without decimals
+makepct<-function(num){
+  if(num<1){
+    num <- round(num,2)*100
+  } else{
+    num <- round(num)
+  }
+  return(as.character(num))
+}
+
 #Comprehensive program data for comparison
 data.comp <- read.tozero('./data/comprehensive.csv','')
+#Apply makepct
 #Just the static "overall comprehensive" data
 data.comp.one <- data.comp[data.comp$compex==1,]
 
@@ -141,24 +196,6 @@ shinyServer(function(input, output) {
     head(data()[,c(input$lead.choices,input$promo.choices,input$incent.choices,input$serv.choices)])
   })
   
-  #Store original plot params
-  op<-c(5, 4, 4, 2) + 0.1
-  plotter<-function(company,choices,indata=data()){
-    par(mar = (c(5, 4, 7, 2)))
-    x<-indata[company,choices]
-    x[x>1]<-1
-    pltdata<-t(data.matrix(x))
-    y<-1:ncol(pltdata)
-    x<-1:nrow(pltdata)
-    #Gray for 0, green for 1
-    collist <- c('gray','darkgreen')
-    image(x,y,pltdata, col = collist, breaks=seq(-1,1),
-          axes=F,xlab="",ylab="")
-    #Draw labels on axis
-    axis(3, at = x, labels=wrap.labels(choices,10),tick=FALSE)
-    par(op)
-  }
-  
   output$lead.plot <- renderPlot({
     if(input$template){
       choices <- lcomp
@@ -168,7 +205,7 @@ shinyServer(function(input, output) {
     )
       choices <- input$lead.choices
     }
-    plotter(input$company,choices)
+    plotter(input$company,choices,data())
   })
   
   output$promo.plot <- renderPlot({
@@ -180,7 +217,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$promo.choices
     }
-    plotter(input$company,choices)
+    plotter(input$company,choices,data())
   })
   output$incent.plot <- renderPlot({
     if(input$template){
@@ -191,34 +228,17 @@ shinyServer(function(input, output) {
       )
       choices <- input$incent.choices
     }
-    plotter(input$company,choices)
+    plotter(input$company,choices,data())
   })
   output$lead.plot.comp.one <- renderPlot({
-    plotter(1,lcomp,indata=data.comp.one)
+    plotter(1,lcomp,data.comp.one)
   })
   output$promo.plot.comp.one <- renderPlot({
-    plotter(1,pcomp,indata=data.comp.one)
+    plotter(1,pcomp,data.comp.one)
   })
   output$incent.plot.comp.one <- renderPlot({
-    plotter(1,icomp,indata=data.comp.one)
+    plotter(1,icomp,data.comp.one)
   })
-  
-  stars2<-dget(paste0("./stars2.R"))
-  
-  stars<-function(company,choices,indata=data()){
-    indata = indata[company,choices]
-    if(ncol(indata)<=8){
-      colvec <-brewer.pal(ncol(indata),'Accent')
-    } else{
-      cols <-brewer.pal(12,'Paired')
-      pal <-colorRampPalette(cols)
-      colvec<-pal(ncol(indata))
-    }
-    a<-stars2(indata,draw.segments=TRUE,labels=NA,flip.labels=F,
-              scale=F,lty=0,col.segments=colvec)
-    stars2(matrix(1,ncol(indata),nrow=1),key.loc=c(a$Var1,a$Var2),
-           xpd = TRUE,key.labels = names(indata),flip.labels=F,add=T,scale=F,lty=0,cex=1)
-  }
   
   output$serv.plot <- renderPlot({
     if(input$template){
@@ -229,20 +249,12 @@ shinyServer(function(input, output) {
       )
       choices <- input$serv.choices
     }
-    stars(input$company,choices)
+    stars(input$company,choices,data())
     })
   
   output$serv.plot.comp.one <- renderPlot({
-    stars(1,scomp,indata=data.comp.one)
+    stars(1,scomp,data.comp.one)
   })
-    
-  
-  bars<-function(company,choices,indata=data(),title){
-    melted <- melt(indata[company,choices])
-    d<-ggplot(melted,aes(x=sort(as.character(variable)),y=value))
-    d+geom_bar(stat='identity')+theme_classic()+coord_flip()+
-      labs(x='',y='')+ggtitle(title)
-  }
   
   output$age.plot <- renderPlot({
     if(input$template){
@@ -253,7 +265,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$age.choices
     }
-    bars(input$company,choices,title='Employee Age')
+    bars(input$company,choices,data(),title='Employee Age')
   })
   output$sal.plot <- renderPlot({
     if(input$template){
@@ -264,23 +276,14 @@ shinyServer(function(input, output) {
       )
       choices <- input$sal.choices
     }
-    bars(input$company,choices,title='Employee Salary')
+    bars(input$company,choices,data(),title='Employee Salary')
   })
   output$age.plot.comp.one <- renderPlot({
-    bars(1,agecomp,indata=data.comp.one,title='Employee Age')
+    bars(1,agecomp,data.comp.one,title='Employee Age')
   })
   output$sal.plot.comp.one <- renderPlot({
-    bars(1,salcomp,indata=data.comp.one,title='Employee Salary')
+    bars(1,salcomp,data.comp.one,title='Employee Salary')
   })
-  
-  makepct<-function(num){
-    if(num<1){
-      num <- round(num,2)*100
-    } else{
-      num <- round(num)
-    }
-    return(as.character(num))
-  }
 
   output$gen.text <- renderText({
     if(input$template){
@@ -325,8 +328,8 @@ shinyServer(function(input, output) {
       validate(
         need(input$part.choices!='','Select employee variables to find similar company')
       )
-      part.num<-as.numeric(data()[input$company,input$part.choices])
-      gen.num<-as.numeric(data()[input$company,input$gen.choices])
+      part.num<-makepct(as.numeric(data()[input$company,input$part.choices]))
+      gen.num<-makepct(as.numeric(data()[input$company,input$gen.choices]))
     }
     higher<-data.comp[as.numeric(data.comp$Participation) > part.num,]
     higher[which.min(abs(higher[,'Percent female'] - gen.num)),]
@@ -340,21 +343,21 @@ shinyServer(function(input, output) {
     paste0('Participation: ', makepct(part))
   })
   output$age.plot.sim <- renderPlot({
-    bars(1,agecomp,indata=data.sim(),title='Employee Age')
+    bars(1,agecomp,data.sim(),title='Employee Age')
   })
   output$sal.plot.sim <- renderPlot({
-    bars(1,salcomp,indata=data.sim(),title='Employee Salary')
+    bars(1,salcomp,data.sim(),title='Employee Salary')
   })
   output$serv.plot.sim <- renderPlot({
-    stars(1,scomp,indata=data.sim())
+    stars(1,scomp,data.sim())
   })
   output$lead.plot.sim <- renderPlot({
-    plotter(1,lcomp,indata=data.sim())
+    plotter(1,lcomp,data.sim())
   })
   output$promo.plot.sim <- renderPlot({
-    plotter(1,pcomp,indata=data.sim())
+    plotter(1,pcomp,data.sim())
   })
   output$incent.plot.sim <- renderPlot({
-    plotter(1,icomp,indata=data.sim())
+    plotter(1,icomp,data.sim())
   })
 })
