@@ -31,20 +31,6 @@ shinyUI(fluidPage(
                  conditionalPanel(
                    condition = "input.template == true",
                    'Click on "Dashboard" tab to see results'
-                 ),
-                 conditionalPanel(
-                   condition = "input.template == false",
-                   checkboxInput('header', 'Header', TRUE),
-                   radioButtons('sep', 'Separator',
-                                c(Comma=',',
-                                  Semicolon=';',
-                                  Tab='\t'),
-                                ','),
-                   radioButtons('quote', 'Quote',
-                                c(None='',
-                                  'Double Quote'='"',
-                                  'Single Quote'="'"),
-                                '"')
                  )
                ),
                mainPanel(
