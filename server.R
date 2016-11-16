@@ -108,17 +108,21 @@ bars<-function(company,choices,indata,title){
 
 #Make number into whole-number percent, without decimals
 makepct<-function(num){
-  if(num<1){
-    num <- round(num,2)*100
+  if(all(num<1)){
+    num <- round(num,2)
+    num <- num*100
   } else{
     num <- round(num)
   }
   return(as.character(num))
 }
 
+
+
 #Comprehensive program data for comparison
 data.comp <- read.tozero('./data/comprehensive.csv','')
-#Apply makepct
+#Apply makepct to participation/female pct
+data.comp[,c('Percent female','Participation')] <- apply(data.comp[,c('Percent female','Participation')],2, function(x) makepct(x))
 #Just the static "overall comprehensive" data
 data.comp.one <- data.comp[data.comp$compex==1,]
 
@@ -138,8 +142,7 @@ shinyServer(function(input, output) {
   })
   
   output$preview <- renderTable({
-    #t(head(data()))
-    data.frame(names(data()))
+    t(head(data()))
   },include.rownames=TRUE,include.colnames=FALSE)
   
   output$lead <- renderUI({
@@ -332,15 +335,17 @@ shinyServer(function(input, output) {
       gen.num<-makepct(as.numeric(data()[input$company,input$gen.choices]))
     }
     higher<-data.comp[as.numeric(data.comp$Participation) > part.num,]
-    higher[which.min(abs(higher[,'Percent female'] - gen.num)),]
+    print(gen.num)
+    print(as.numeric(higher[,'Percent female']) - gen.num)
+    higher[which.min(abs(as.numeric(higher[,'Percent female']) - gen.num)),]
     })
   output$gen.text.sim <- renderText({
     fem <- data.sim()[,'Percent female']
-    paste0('Female employees:', makepct(fem))
+    paste0('Female employees:', fem)
   })
   output$part.text.sim <- renderText({
     part = data.sim()[,'Participation']
-    paste0('Participation: ', makepct(part))
+    paste0('Participation: ', part)
   })
   output$age.plot.sim <- renderPlot({
     bars(1,agecomp,data.sim(),title='Employee Age')
