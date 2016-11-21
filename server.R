@@ -208,7 +208,7 @@ shinyServer(function(input, output) {
     )
       choices <- input$lead.choices
     }
-    plotter(input$company,choices,data())
+    plotter(1,choices,data())
   })
   
   output$promo.plot <- renderPlot({
@@ -220,7 +220,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$promo.choices
     }
-    plotter(input$company,choices,data())
+    plotter(1,choices,data())
   })
   output$incent.plot <- renderPlot({
     if(input$template){
@@ -231,7 +231,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$incent.choices
     }
-    plotter(input$company,choices,data())
+    plotter(1,choices,data())
   })
   output$lead.plot.comp.one <- renderPlot({
     plotter(1,lcomp,data.comp.one)
@@ -252,7 +252,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$serv.choices
     }
-    stars(input$company,choices,data())
+    stars(1,choices,data())
     })
   
   output$serv.plot.comp.one <- renderPlot({
@@ -268,7 +268,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$age.choices
     }
-    bars(input$company,choices,data(),title='Employee Age')
+    bars(1,choices,data(),title='Employee Age')
   })
   output$sal.plot <- renderPlot({
     if(input$template){
@@ -279,7 +279,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$sal.choices
     }
-    bars(input$company,choices,data(),title='Employee Salary')
+    bars(1,choices,data(),title='Employee Salary')
   })
   output$age.plot.comp.one <- renderPlot({
     bars(1,agecomp,data.comp.one,title='Employee Age')
@@ -297,7 +297,7 @@ shinyServer(function(input, output) {
       )
       choices <- input$gen.choices
     }
-    fem <- data()[input$company,choices]
+    fem <- data()[1,choices]
     paste0('Number/Percent female employees:', makepct(fem))
   })
   
@@ -310,29 +310,29 @@ shinyServer(function(input, output) {
       )
       choices <- input$part.choices
     }
-    part = as.numeric(data()[input$company,choices])
+    part = as.numeric(data()[1,choices])
     paste0('Participation: ', makepct(part))
   })
   output$gen.text.comp.one <- renderText({
     fem <- data.comp.one[1,'Percent female']
-    paste0('Female employees:', makepct(fem))
+    paste0('Female employees:', fem)
   })
   output$part.text.comp.one <- renderText({
     part = data.comp.one[1,'Participation']
-    paste0('Participation: ', makepct(part))
+    paste0('Participation: ',part)
   })
   
   #Create similar, based on gender, if available
   data.sim <- reactive({
     if(input$template){
-      part.num<-as.numeric(data()[input$company,'Participation'])
-      gen.num<-as.numeric(data()[input$company,'Percent female'])
+      part.num<-as.numeric(data()[1,'Participation'])
+      gen.num<-as.numeric(data()[1,'Percent female'])
     } else{
       validate(
         need(input$part.choices!='','Select employee variables to find similar company')
       )
-      part.num<-makepct(as.numeric(data()[input$company,input$part.choices]))
-      gen.num<-makepct(as.numeric(data()[input$company,input$gen.choices]))
+      part.num<-makepct(as.numeric(data()[1,input$part.choices]))
+      gen.num<-makepct(as.numeric(data()[1,input$gen.choices]))
     }
     higher<-data.comp[as.numeric(data.comp$Participation) > part.num,]
     print(gen.num)
