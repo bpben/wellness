@@ -35,9 +35,9 @@ salcomp<-c('<20k','20-29k','30-39k','40-59k','60k+')
 #Change all NAs to zero
 read.tozero<-function(file,type){
   if(type=='xlsx'){
-    raw <-read.xlsx(file, sheetName='template',colIndex=c(3,4))
-    x <- data.frame(t(raw[,2]))
-    names(x) <- raw[,1]
+    raw <-read.xlsx(file, sheetName='template')
+    x <- data.frame(t(raw[,-1]))
+    names(x) <- raw[,-2]
   } else{
     x <- read.csv(file,check.names = FALSE)
   }
@@ -331,8 +331,8 @@ shinyServer(function(input, output) {
       validate(
         need(input$part.choices!='','Select employee variables to find similar company')
       )
-      part.num<-makepct(as.numeric(data()[1,input$part.choices]))
-      gen.num<-makepct(as.numeric(data()[1,input$gen.choices]))
+      part.num<-as.numeric(makepct(as.numeric(data()[1,input$part.choices])))
+      gen.num<-as.numeric(makepct(as.numeric(data()[1,input$gen.choices])))
     }
     higher<-data.comp[as.numeric(data.comp$Participation) > part.num,]
     print(gen.num)

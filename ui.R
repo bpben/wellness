@@ -36,6 +36,7 @@ dashboardPage(
       menuItem("Promotion", tabName = "promo"),
       menuItem("Incentives", tabName = "incent"),
       menuItem("Services", tabName = "serv"),
+      menuItem("Employees", tabName = "emp"),
       menuItem("Dashboard", tabName = "dashboard"),
       menuItem("Comprehensive Program", tabName = "Comprehensive"),
       menuItem("Similar Program", tabName = "Similar")
@@ -50,6 +51,22 @@ dashboardPage(
       chooser('promo','./promo.md.html'),
       chooser('incent','./incent.md.html'),
       chooser('serv','./serv.md.html'),
+      tabItem('emp',
+              fluidRow(
+                column(
+                  width=4,tableOutput('age')
+                ),
+                column(
+                  width=4,tableOutput('sal')
+                ),
+                column(
+                  width=4,tableOutput('gen')
+                ),
+                column(
+                  width=4,tableOutput('part')
+                )
+              )
+      ),
       tabItem("dashboard",
               #Employer data
               fluidRow(
