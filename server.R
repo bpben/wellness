@@ -36,8 +36,8 @@ salcomp<-c('<20k','20-29k','30-39k','40-59k','60k+')
 read.tozero<-function(file,type){
   if(type=='xlsx'){
     raw <-read.xlsx(file, sheetName='template')
-    x <- data.frame(t(raw[,-1]))
-    names(x) <- raw[,-2]
+    x <- data.frame(t(raw[,ncol(raw)]))
+    names(x) <- raw[,ncol(raw)-1]
   } else{
     x <- read.csv(file,check.names = FALSE)
   }
